@@ -2,11 +2,66 @@
 <html lang="pt-BR">
 
 <head>
-    <meta charset="UTF-8">
-    <title>Prontuário AI</title>
+    <meta charset="UTF-8" />
+    <title>Prontuário AI — MVP</title>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f5f5;
+            padding: 40px;
+        }
+
+        .container {
+            max-width: 480px;
+            margin: auto;
+            background: white;
+            padding: 24px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, .1);
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            font-size: 16px;
+            margin-top: 10px;
+            cursor: pointer;
+        }
+
+        #status {
+            margin-top: 20px;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        #timer {
+            margin-top: 10px;
+            font-size: 24px;
+            text-align: center;
+        }
+    </style>
 </head>
 
 <body>
+
+    <div class="container">
+        <h1>Prontuário AI</h1>
+
+        <button id="btnGravar">🎙️ Iniciar Gravação</button>
+        <button id="btnParar" disabled>⏹️ Parar Gravação</button>
+
+        <div id="status">Pronto</div>
+        <div id="timer">00:00</div>
+    </div>
+
+    <script src="app.js"></script>
 </body>
 
 </html>
