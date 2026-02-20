@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="h-full bg-slate-50 antialiased">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recepção — formular.IO</title>
+    <!-- Reutilizando estilos e scripts do projeto -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: { primary: { 500: '#3b82f6', 600: '#2563eb' } },
+                    keyframes: {
+                        'fade-in-down': {
+                            '0%': { opacity: '0', transform: 'translateY(-10px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        }
+                    },
+                    animation: {
+                        'fade-in-down': 'fade-in-down 0.2s ease-out',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        .status-message {
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            text-align: center;
+            margin-top: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .status-message.error {
+            color: #ef4444;
+            background-color: #fca5a5;
+            border: 1px solid #f87171;
+        }
+
+        .status-message.success {
+            color: #10b981;
+            background-color: #a7f3d0;
+            border: 1px solid #34d399;
+        }
+
+        .status-message.loading {
+            color: #3b82f6;
+            background-color: #bfdbfe;
+            border: 1px solid #60a5fa;
+            animation: pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen bg-slate-50 text-slate-600">
+
+    <!-- Navbar -->
+    <nav class="bg-white border-b border-slate-200 sticky top-0 z-20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center gap-3">
+                    <div class="p-1.5 bg-indigo-600 text-white rounded-lg">
+                        <i class="ph-bold ph-user-list text-xl"></i>
+                    </div>
+                    <span class="font-bold text-xl text-slate-800">Recepção</span>
+                </div>
+                <div class="flex items-center gap-4">
+                    <span class="text-sm font-medium text-slate-500">Olá, Secretária</span>
+                    <button onclick="logoutSecretaria()"
+                        class="text-sm text-rose-500 hover:text-rose-700 font-medium">Sair</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <script>
+        // Trava de segurança da Secretária
+        const secretariaAtiva = localStorage.getItem('secretaria_ativa');
+        if (!secretariaAtiva) {
+            window.location.href = 'login.html';
+        }
+
+        function logoutSecretaria() {
+            localStorage.removeItem('secretaria_ativa');
+            window.location.href = 'login.html';
+        }
+    </script>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+
+            <!-- Coluna 1: Cadastro Completo -->
+            <div class="md:col-span-1">
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sticky top-24">
+                    <h2 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                        <i class="ph-fill ph-plus-circle text-indigo-600"></i> Novo Paciente
+                    </h2>
+
+                    <form id="formCadastro" class="space-y-4">
+                        <!-- Nome -->
+                        <div>
+                            <label for="nome" class="block text-sm font-semibold text-slate-700 mb-1">Nome Completo
+                                <span class="text-rose-500">*</span></label>
+                            <input type="text" id="nome" name="nome" required placeholder="Ex: João da Silva"
+                                class="w-full rounded-xl border-slate-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm py-2.5 px-3 border transition-all text-slate-800 bg-slate-50 focus:bg-white hover:border-indigo-300">
+                        </div>
+
+                        <!-- Data Nascimento e Sexo -->
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label for="data_nascimento"
+                                    class="block text-sm font-semibold text-slate-700 mb-1">Nascimento <span
+                                        class="text-rose-500">*</span></label>
+                                <input type="text" id="data_nascimento" name="data_nascimento" required
+                                    placeholder="DD/MM/AAAA" maxlength="10" inputmode="numeric"
+                                    class="w-full rounded-xl border-slate-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm py-2.5 px-3 border transition-all text-slate-800 bg-slate-50 focus:bg-white hover:border-indigo-300">
+                            </div>
+
+                            <!-- Custom Select: Sexo -->
+                            <div class="relative custom-select-container" id="select-sexo">
+                                <label class="block text-sm font-semibold text-slate-700 mb-1">Sexo</label>
+                                <button type="button"
+                                    class="custom-select-trigger w-full bg-slate-50 border border-slate-200 text-slate-800 py-2.5 px-3 rounded-xl text-left shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 flex justify-between items-center hover:bg-white">
+                                    <span class="selected-text text-slate-400 text-sm">Selecione</span>
+                                    <i class="ph-bold ph-caret-down text-slate-400"></i>
+                                </button>
+                                <div
+                                    class="custom-options hidden absolute z-50 mt-1 w-full bg-white shadow-xl rounded-xl border border-slate-100 max-h-60 overflow-auto py-1 animate-fade-in-down origin-top">
+                                    <div class="option p-2 hover:bg-indigo-50 cursor-pointer text-sm" data-value="M">
+                                        Masculino</div>
+                                    <div class="option p-2 hover:bg-indigo-50 cursor-pointer text-sm" data-value="F">
+                                        Feminino</div>
+                                    <div class="option p-2 hover:bg-indigo-50 cursor-pointer text-sm" data-value="O">
+                                        Outro</div>
+                                </div>
+                                <input type="hidden" name="sexo" id="sexo">
+                            </div>
+                        </div>
+
+                        <!-- Telefone e Convênio -->
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label for="telefone" class="block text-sm font-semibold text-slate-700 mb-1">Telefone
+                                    <span class="text-rose-500">*</span></label>
+                                <input type="tel" id="telefone" name="telefone" required placeholder="(99) 99999-9999"
+                                    maxlength="15"
+                                    class="w-full rounded-xl border-slate-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm py-2.5 px-3 border transition-all text-slate-800 bg-slate-50 focus:bg-white hover:border-indigo-300">
+                            </div>
+
+                            <!-- Custom Select: Convênio -->
+                            <div class="relative custom-select-container" id="select-convenio">
+                                <label class="block text-sm font-semibold text-slate-700 mb-1">Convênio</label>
+                                <button type="button"
+                                    class="custom-select-trigger w-full bg-slate-50 border border-slate-200 text-slate-800 py-2.5 px-3 rounded-xl text-left shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 flex justify-between items-center hover:bg-white">
+                                    <span class="selected-text text-slate-400 text-sm">Selecione</span>
+                                    <i class="ph-bold ph-caret-down text-slate-400"></i>
+                                </button>
+                                <div
+                                    class="custom-options hidden absolute z-50 mt-1 w-full bg-white shadow-xl rounded-xl border border-slate-100 max-h-60 overflow-auto py-1 animate-fade-in-down origin-top">
+                                    <div class="option p-2 hover:bg-indigo-50 cursor-pointer text-sm"
+                                        data-value="Particular">Particular</div>
+                                    <div class="option p-2 hover:bg-indigo-50 cursor-pointer text-sm"
+                                        data-value="Unimed">Unimed</div>
+                                    <div class="option p-2 hover:bg-indigo-50 cursor-pointer text-sm"
+                                        data-value="Bradesco Saúde">Bradesco Saúde</div>
+                                    <div class="option p-2 hover:bg-indigo-50 cursor-pointer text-sm"
+                                        data-value="Medsênior">Medsênior</div>
+                                    <div class="option p-2 hover:bg-indigo-50 cursor-pointer text-sm" data-value="Samp">
+                                        Samp</div>
+                                    <div class="option p-2 hover:bg-indigo-50 cursor-pointer text-sm" data-value="SUS">
+                                        SUS</div>
+                                </div>
+                                <input type="hidden" name="convenio" id="convenio">
+                            </div>
+                        </div>
+
+                        <!-- Endereço e UF -->
+                        <div class="grid grid-cols-3 gap-3">
+                            <div class="col-span-2">
+                                <label for="cidade"
+                                    class="block text-sm font-semibold text-slate-700 mb-1">Cidade</label>
+                                <input type="text" id="cidade" name="cidade" placeholder="Ex: Vitória"
+                                    class="w-full rounded-xl border-slate-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm py-2.5 px-3 border transition-all text-slate-800 bg-slate-50 focus:bg-white hover:border-indigo-300">
+                            </div>
+                            <div class="relative custom-select-container" id="select-uf">
+                                <label class="block text-sm font-semibold text-slate-700 mb-1">UF</label>
+                                <button type="button"
+                                    class="custom-select-trigger w-full bg-slate-50 border border-slate-200 text-slate-800 py-2.5 px-3 rounded-xl text-left shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 flex justify-between items-center hover:bg-white">
+                                    <span class="selected-text text-slate-400 text-sm truncate">UF</span>
+                                    <i class="ph-bold ph-caret-down text-slate-400"></i>
+                                </button>
+                                <div
+                                    class="custom-options hidden absolute right-0 z-50 mt-1 w-48 bg-white shadow-xl rounded-xl border border-slate-100 max-h-60 overflow-auto py-1 animate-fade-in-down origin-top">
+                                    <!-- Populated in JS -->
+                                </div>
+                                <input type="hidden" name="uf" id="uf">
+                            </div>
+                        </div>
+
+                        <!-- Responsável (Details) -->
+                        <div class="pt-2">
+                            <details class="group">
+                                <summary
+                                    class="flex items-center cursor-pointer text-sm text-indigo-600 font-semibold hover:text-indigo-700 outline-none select-none transition-colors p-2 rounded-lg hover:bg-indigo-50 w-full">
+                                    <i class="ph ph-caret-right mr-2 transition-transform group-open:rotate-90"></i>
+                                    Dados do Responsável (Opcional)
+                                </summary>
+                                <div class="mt-2 space-y-3 pl-4 border-l-2 border-indigo-100 ml-2 animate-fade-in-down">
+                                    <div>
+                                        <label for="responsavel_nome"
+                                            class="block text-xs font-medium text-slate-700 mb-1">Nome do
+                                            Responsável</label>
+                                        <input type="text" id="responsavel_nome" name="responsavel_nome"
+                                            class="w-full rounded-lg border-slate-200 text-sm py-2 px-3 bg-slate-50">
+                                    </div>
+                                    <div>
+                                        <label for="responsavel_parentesco"
+                                            class="block text-xs font-medium text-slate-700 mb-1">Parentesco</label>
+                                        <input type="text" id="responsavel_parentesco" name="responsavel_parentesco"
+                                            class="w-full rounded-lg border-slate-200 text-sm py-2 px-3 bg-slate-50">
+                                    </div>
+                                </div>
+                            </details>
+                        </div>
+
+                        <div id="statusCadastro" class="text-sm font-medium text-center min-h-[24px]"></div>
+
+                        <button type="submit"
+                            class="w-full py-2.5 bg-indigo-600 text-white font-bold rounded-lg hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all active:scale-95">
+                            Cadastrar e Enviar para Fila
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Coluna 2: Fila e Histórico -->
+            <div class="md:col-span-2 space-y-8">
+                <!-- Fila de Espera -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                        <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                            <i class="ph-bold ph-hourglass-medium text-amber-500"></i>
+                            Fila de Atendimento (Hoje)
+                        </h2>
+                        <button onclick="carregarFila()"
+                            class="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 transition-colors">
+                            <i class="ph-bold ph-arrows-clockwise"></i> Atualizar
+                        </button>
+                    </div>
+
+                    <ul class="divide-y divide-slate-100" id="listaEspera">
+                        <!-- Estado inicial controlado via JS -->
+                    </ul>
+                </div>
+
+                <!-- Lista de Finalizados -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+                        <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                            <i class="ph-bold ph-check-circle text-emerald-500"></i>
+                            Atendimentos Finalizados (Hoje)
+                        </h2>
+                    </div>
+
+                    <ul class="divide-y divide-slate-100" id="listaFinalizados">
+                        <li class="p-8 text-center text-slate-400">
+                            <p class="text-sm">Nenhum atendimento finalizado hoje.</p>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Modal Detalhes Paciente -->
+    <div id="modalDetalhes" class="hidden fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title"
+        role="dialog" aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"
+                onclick="fecharModal()"></div>
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+            <div
+                class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full animate-fade-in-down">
+                <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                    <div class="sm:flex sm:items-start">
+                        <div
+                            class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-indigo-100 sm:mx-0 sm:h-10 sm:w-10">
+                            <i class="ph-bold ph-user text-indigo-600 text-xl"></i>
+                        </div>
+                        <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                            <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-nome">Nome do Paciente
+                            </h3>
+                            <div class="mt-2 text-sm text-gray-500 space-y-2">
+                                <p><span class="font-semibold">Convênio:</span> <span id="modal-convenio">-</span></p>
+                                <p><span class="font-semibold">Chegada:</span> <span id="modal-chegada">-</span></p>
+                                <p><span class="font-semibold">ID:</span> <span id="modal-id"
+                                        class="font-mono text-xs bg-gray-100 px-1 rounded">-</span></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse justify-between items-center">
+                    <button type="button" onclick="fecharModal()"
+                        class="w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm">
+                        Fechar
+                    </button>
+                    <button type="button" onclick="excluirPaciente()"
+                        class="w-full inline-flex justify-center items-center gap-2 rounded-md border border-transparent shadow-sm px-4 py-2 bg-rose-600 text-base font-medium text-white hover:bg-rose-700 focus:outline-none sm:w-auto sm:text-sm">
+                        <i class="ph-bold ph-trash"></i> Excluir Paciente
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // === MÁSCARAS & UTILS ===
+        const inputNome = document.getElementById("nome");
+        const inputTelefone = document.getElementById("telefone");
+        const inputNascimento = document.getElementById("data_nascimento");
+
+        if (inputNome) inputNome.addEventListener("input", (e) => e.target.value = e.target.value.replace(/[0-9]/g, ""));
+
+        if (inputTelefone) {
+            inputTelefone.addEventListener("input", (e) => {
+                let v = e.target.value.replace(/\D/g, "");
+                v = v.replace(/^(\d{2})(\d)/g, "($1) $2");
+                v = v.replace(/(\d)(\d{4})$/, "$1-$2");
+                e.target.value = v;
+            });
+        }
+
+        if (inputNascimento) {
+            inputNascimento.addEventListener("input", (e) => {
+                let v = e.target.value.replace(/\D/g, "").slice(0, 8);
+
+                // Validação Inteligente Dia/Mês/Ano
+                if (v.length >= 2) {
+                    let day = parseInt(v.substring(0, 2));
+                    if (day > 31) v = '31' + v.substring(2);
+                    else if (day < 1 && v.substring(0, 2).length === 2) v = '01' + v.substring(2);
+                }
+                if (v.length >= 4) {
+                    let month = parseInt(v.substring(2, 4));
+                    if (month > 12) v = v.substring(0, 2) + '12' + v.substring(4);
+                    else if (month < 1 && v.substring(2, 4).length === 2) v = v.substring(0, 2) + '01' + v.substring(4);
+                }
+                if (v.length >= 8) {
+                    let year = parseInt(v.substring(4, 8));
+                    const currentYear = new Date().getFullYear();
+                    // Limita anos bizarros
+                    if (year < 1900) v = v.substring(0, 4) + '1900';
+                    else if (year > currentYear) v = v.substring(0, 4) + currentYear;
+                }
+
+                // Aplica a formatação em '/ ' 
+                if (v.length > 4) v = v.replace(/^(\d{2})(\d{2})(\d+)/, "$1/$2/$3");
+                else if (v.length > 2) v = v.replace(/^(\d{2})(\d+)/, "$1/$2");
+
+                e.target.value = v;
+            });
+            inputNascimento.addEventListener("blur", (e) => {
+                const v = e.target.value;
+                if (v.length > 0 && v.length < 10) {
+                    // Limpa se deixou a data na metade cortada
+                    alert("A data deve estar no formato DD/MM/AAAA");
+                    e.target.value = "";
+                } else if (v.length === 10) {
+                    const [d, m, y] = v.split('/').map(Number);
+                    const date = new Date(y, m - 1, d);
+                    // Verificação extra para fevereiro bissexto ou dias impossiveis (ex 31/02)
+                    if (date.getFullYear() !== y || date.getMonth() + 1 !== m || date.getDate() !== d) {
+                        alert("Data inválida. Verifique o limite de dias para este mês.");
+                        e.target.value = "";
+                    }
+                }
+            });
+        }
+
+        // === CUSTOM SELECTS ===
+        const estadosBR = { 'AC': 'Acre', 'AL': 'Alagoas', 'ES': 'Espírito Santo', 'MG': 'Minas Gerais', 'RJ': 'Rio de Janeiro', 'SP': 'São Paulo' }; // Simplificado para exemplo
+
+        function initCustomSelects() {
+            // Populate UF
+            const ufContainer = document.querySelector('#select-uf .custom-options');
+            if (ufContainer) {
+                ufContainer.innerHTML = '';
+                Object.keys(estadosBR).sort().forEach(sigla => {
+                    const div = document.createElement('div');
+                    div.className = 'option p-2 hover:bg-indigo-50 cursor-pointer text-sm';
+                    div.dataset.value = sigla;
+                    div.textContent = sigla;
+                    ufContainer.appendChild(div);
+                });
+            }
+
+            document.querySelectorAll('.custom-select-container').forEach(container => {
+                const trigger = container.querySelector('.custom-select-trigger');
+                const options = container.querySelector('.custom-options');
+                const hiddenInput = container.querySelector('input[type="hidden"]');
+                const selectedText = container.querySelector('.selected-text');
+                const caret = container.querySelector('.ph-caret-down');
+
+                trigger.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    document.querySelectorAll('.custom-options').forEach(opt => opt !== options && opt.classList.add('hidden'));
+                    options.classList.toggle('hidden');
+                });
+
+                options.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('option')) {
+                        const val = e.target.dataset.value;
+                        const txt = e.target.textContent;
+                        hiddenInput.value = val;
+                        selectedText.textContent = txt;
+                        selectedText.classList.remove('text-slate-400');
+                        selectedText.classList.add('text-slate-800');
+                        options.classList.add('hidden');
+                    }
+                });
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('.custom-select-container')) {
+                    document.querySelectorAll('.custom-options').forEach(opt => opt.classList.add('hidden'));
+                }
+            });
+        }
+        initCustomSelects();
+
+        // === INTEGRAÇÃO COM N8N ===
+        const WEBHOOK_CADASTRO = "https://n8n.srv1181762.hstgr.cloud/webhook/cadastroPaciente";
+        const WEBHOOK_LISTAR = "https://n8n.srv1181762.hstgr.cloud/webhook/listarPacientes";
+        const WEBHOOK_EXCLUIR = "https://n8n.srv1181762.hstgr.cloud/webhook/delete_paciente";
+
+        // Função para carregar a fila
+        async function carregarFila() {
+            const lista = document.getElementById('listaEspera');
+            if (!lista) return;
+
+            try {
+                // Anti-cache: Adiciona timestamp único
+                const url = `${WEBHOOK_LISTAR}?t=${new Date().getTime()}`;
+
+                const response = await fetch(url);
+                if (!response.ok) throw new Error('Erro ao buscar fila');
+
+                let data = await response.json();
+
+                if (data.all_pacientes) data = data.all_pacientes;
+                if (!Array.isArray(data)) data = [data]; // Garante array
+
+                // Filtrar nulos/vazios
+                data = data.filter(p => p && p.nome);
+
+                lista.innerHTML = ''; // Limpa antes de renderizar
+
+                if (data.length === 0) {
+                    lista.innerHTML = `
+                        <li class="p-12 text-center text-slate-400 flex flex-col items-center justify-center h-48 animate-fade-in-down">
+                            <div class="bg-slate-50 p-4 rounded-full mb-3">
+                                <i class="ph ph-coffee text-3xl text-slate-300"></i>
+                            </div>
+                            <p class="font-medium text-slate-500">Sem pacientes na fila</p>
+                            <p class="text-xs text-slate-400 mt-1">Cadastre um novo paciente ao lado</p>
+                        </li>
+                    `;
+                    return;
+                }
+
+                const waitingList = data.filter(p => p.status_atendimento !== 'finalizado');
+                const finishedList = data.filter(p => p.status_atendimento === 'finalizado');
+
+                lista.innerHTML = '';
+                const histLista = document.getElementById('listaFinalizados');
+                if (histLista) histLista.innerHTML = '';
+
+                if (waitingList.length === 0) {
+                    lista.innerHTML = `<li class="p-12 text-center text-slate-400 flex flex-col items-center justify-center animate-fade-in-down"><i class="ph ph-coffee text-3xl mb-3 text-slate-300"></i><p>Fila vazia</p></li>`;
+                }
+
+                waitingList.forEach(p => {
+                    const dataCriacao = p.created_at ? new Date(p.created_at) : new Date();
+                    const horaChegada = dataCriacao.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+                    const li = document.createElement('li');
+                    li.className = 'p-4 hover:bg-slate-50 transition-colors border-l-2 border-transparent hover:border-indigo-500 animate-fade-in-down cursor-pointer group';
+
+                    const pacienteData = JSON.stringify({ id: p.id, nome: p.nome, convenio: p.convenio || 'Particular', chegada: horaChegada }).replace(/'/g, "&#39;");
+                    li.setAttribute('onclick', `abrirModal(${pacienteData})`);
+
+                    li.innerHTML = `
+                        <div class="flex justify-between items-center">
+                            <div class="flex items-center gap-4">
+                                <div class="w-10 h-10 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-sm group-hover:bg-indigo-600 group-hover:text-white transition-all">${p.nome.substring(0, 2).toUpperCase()}</div>
+                                <div>
+                                    <p class="text-sm font-bold text-slate-900 group-hover:text-indigo-700">${p.nome}</p>
+                                    <div class="flex items-center gap-2 text-xs text-slate-500">
+                                        <span class="bg-slate-100 px-1.5 py-0.5 rounded">${p.convenio || 'Particular'}</span>
+                                        <span class="flex items-center gap-1"><i class="ph-bold ph-clock"></i> ${horaChegada}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <span class="px-2.5 py-1 bg-amber-50 text-amber-700 text-[10px] font-bold rounded-full uppercase tracking-wider border border-amber-100">Aguardando</span>
+                        </div>
+                    `;
+                    lista.appendChild(li);
+                });
+
+                if (histLista) {
+                    if (finishedList.length === 0) {
+                        histLista.innerHTML = `<li class="p-8 text-center text-slate-400 text-sm">Nenhum atendimento finalizado hoje.</li>`;
+                    }
+                    finishedList.forEach(p => {
+                        const li = document.createElement('li');
+                        li.className = 'p-4 bg-slate-50/30 opacity-75 grayscale-[0.5]';
+                        li.innerHTML = `
+                            <div class="flex justify-between items-center">
+                                <div class="flex items-center gap-4">
+                                    <div class="w-10 h-10 rounded-full bg-slate-200 text-slate-500 flex items-center justify-center font-bold text-sm">${p.nome.substring(0, 2).toUpperCase()}</div>
+                                    <div>
+                                        <p class="text-sm font-bold text-slate-600 line-through">${p.nome}</p>
+                                        <p class="text-[10px] text-slate-400">Atendimento Concluído</p>
+                                    </div>
+                                </div>
+                                <span class="px-2.5 py-1 bg-emerald-50 text-emerald-700 text-[10px] font-bold rounded-full uppercase tracking-wider border border-emerald-100">Finalizado</span>
+                            </div>
+                        `;
+                        histLista.appendChild(li);
+                    });
+                }
+
+            } catch (error) {
+                console.error("Erro ao carregar fila:", error);
+                lista.innerHTML = `
+                    <li class="p-8 text-center text-rose-400 flex flex-col items-center">
+                        <i class="ph-bold ph-warning-circle text-2xl mb-2"></i>
+                        <p class="text-sm">Falha ao buscar lista.</p>
+                        <button onclick="carregarFila()" class="mt-2 text-xs font-bold underline hover:text-rose-600">Tentar novamente</button>
+                    </li>
+                `;
+            }
+        }
+
+        // === MODAL DETALHES & EXCLUSÃO ===
+        let pacienteSelecionadoId = null;
+
+        function abrirModal(paciente) {
+            pacienteSelecionadoId = paciente.id;
+            document.getElementById('modal-nome').textContent = paciente.nome;
+            document.getElementById('modal-convenio').textContent = paciente.convenio;
+            document.getElementById('modal-chegada').textContent = paciente.chegada;
+            document.getElementById('modal-id').textContent = paciente.id || 'N/A';
+
+            const modal = document.getElementById('modalDetalhes');
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.querySelector('div[class*="transform"]').classList.add('scale-100', 'opacity-100');
+            }, 10);
+        }
+
+        function fecharModal() {
+            const modal = document.getElementById('modalDetalhes');
+            modal.classList.add('hidden');
+            pacienteSelecionadoId = null;
+        }
+
+        async function excluirPaciente() {
+            if (!pacienteSelecionadoId) return;
+
+            if (!confirm("Tem certeza que deseja excluir este paciente da fila? Esta ação não pode ser desfeita.")) return;
+
+            const modalBtn = document.querySelector('#modalDetalhes button.bg-rose-600');
+            const originalText = modalBtn.innerHTML;
+            modalBtn.innerHTML = '<i class="ph ph-spinner animate-spin"></i> Excluindo...';
+            modalBtn.disabled = true;
+
+            try {
+                // Endpoint CORRETO: GET api/delete
+                const response = await fetch(`${WEBHOOK_EXCLUIR}?id=${pacienteSelecionadoId}`, {
+                    method: 'GET', // Usar GET conforme configurado no n8n para evitar 404
+                    headers: { 'Accept': 'application/json' }
+                });
+
+                if (!response.ok) throw new Error('Falha na exclusão');
+
+                // Sucesso
+                fecharModal();
+                await carregarFila(); // Recarrega a lista do servidor
+
+            } catch (e) {
+                console.error(e);
+                alert("Erro ao excluir paciente. Verifique sua conexão.");
+            } finally {
+                modalBtn.innerHTML = originalText;
+                modalBtn.disabled = false;
+            }
+        }
+
+        // Fechar modal com ESC
+        document.addEventListener('keydown', (e) => {
+            if (e.key === "Escape") fecharModal();
+        });
+
+        // Carregar fila ao iniciar
+        document.addEventListener('DOMContentLoaded', carregarFila);
+        // Atualizar fila a cada 30s
+        setInterval(carregarFila, 30000);
+
+        document.getElementById('formCadastro').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const statusDiv = document.getElementById('statusCadastro');
+
+            // Coletar dados
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData.entries());
+
+            // Validar campos obrigatórios (extra backup)
+            if (!data.nome || !data.data_nascimento || !data.telefone) {
+                statusDiv.textContent = "⚠️ Preencha os campos obrigatórios (*)";
+                statusDiv.className = "status-message error";
+                return;
+            }
+
+            // Fallback for Convenio if nothing was selected
+            if (!data.convenio || data.convenio.trim() === '') {
+                data.convenio = 'Particular';
+            }
+
+            statusDiv.textContent = "⏳ Enviando para o sistema...";
+            statusDiv.className = "status-message loading";
+
+            // CORREÇÃO DE DATA: Converter DD/MM/AAAA para AAAA-MM-DD
+            if (data.data_nascimento && data.data_nascimento.includes('/')) {
+                const parts = data.data_nascimento.split('/');
+                if (parts.length === 3) {
+                    data.data_nascimento = `${parts[2]}-${parts[1]}-${parts[0]}`;
+                }
+            }
+
+            try {
+                // Converter para Query Params (já que o webhook é GET)
+                const params = new URLSearchParams(data).toString();
+                const url = `${WEBHOOK_CADASTRO}?${params}`;
+
+                const response = await fetch(url, {
+                    method: 'GET', // Webhook configurado como GET
+                    headers: { 'Accept': 'application/json' }
+                });
+
+                const responseText = await response.text();
+
+                if (!response.ok) {
+                    throw new Error(`Erro Servidor: ${response.status} - ${responseText}`);
+                }
+
+                let result;
+                try {
+                    result = JSON.parse(responseText);
+                } catch (e) {
+                    throw new Error(`Resposta não é JSON válido: ${responseText.substring(0, 50)}...`);
+                }
+
+                if (result) {
+                    statusDiv.textContent = "✅ Paciente cadastrado com sucesso!";
+                    statusDiv.className = "status-message success";
+                    e.target.reset();
+
+                    // Reset visual selects
+                    document.querySelectorAll('.selected-text').forEach(s => {
+                        s.textContent = 'Selecione';
+                        s.classList.add('text-slate-400');
+                    });
+
+                    // Recarregar lista para confirmar que foi pro banco
+                    carregarFila();
+
+                } else {
+                    throw new Error('Erro na resposta do servidor');
+                }
+            } catch (error) {
+                console.error(error);
+                statusDiv.textContent = "❌ Erro ao conectar com o servidor. Tente novamente.";
+                statusDiv.className = "status-message error";
+            }
+
+            setTimeout(() => {
+                if (statusDiv.className.includes('success')) {
+                    statusDiv.textContent = "";
+                    statusDiv.className = "";
+                }
+            }, 5000);
+        });
+    </script>
+</body>
+
+</html>
