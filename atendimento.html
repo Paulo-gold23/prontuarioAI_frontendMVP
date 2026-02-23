@@ -12,6 +12,7 @@
     <!-- Supabase SDK e Auth Guard -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="auth-guard.js"></script>
+    <script src="dark-mode.js"></script>
     <!-- Google Fonts: Inter & Outfit -->
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;700;900&display=swap"
@@ -167,6 +168,11 @@
                     <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">Atendimento Ativo</p>
                     <p class="text-sm font-bold text-slate-700" id="medicoNome">Dr. Luciano</p>
                 </div>
+                <button id="theme-toggle"
+                    class="p-2 rounded-lg text-slate-500 hover:bg-slate-100 transition-colors mx-2"
+                    title="Modo Noturno">
+                    <i class="ph-bold ph-moon text-xl"></i>
+                </button>
                 <div class="w-10 h-10 rounded-xl bg-slate-200 border-2 border-white shadow-sm overflow-hidden">
                     <img src="https://ui-avatars.com/api/?name=Medico&background=6366f1&color=fff" alt="Médico">
                 </div>
