@@ -231,7 +231,9 @@
                                         </div>
                                         <h4 class="font-bold text-slate-800 text-sm mb-4 line-clamp-1">${c.paciente_nome}</h4>
                                         <div class="flex gap-2">
-                                            <a href="${pdfSignedUrl || '#'}" target="_blank" class="flex-1 text-center py-2 bg-emerald-50 text-emerald-700 text-xs font-black rounded-lg hover:bg-emerald-100 transition-colors"> VER PDF </a>
+                                            <a href="${pdfSignedUrl || '#'}" target="_blank" 
+                                               onclick="${!pdfSignedUrl ? 'event.preventDefault(); alert(\'PDF não encontrado ou expirado.\');' : ''}"
+                                               class="flex-1 text-center py-2 bg-emerald-50 text-emerald-700 text-xs font-black rounded-lg hover:bg-emerald-100 transition-colors"> VER PDF </a>
                                             ${audioTag}
                                         </div>
                                     `;

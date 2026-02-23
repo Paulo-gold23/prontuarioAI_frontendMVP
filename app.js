@@ -10,6 +10,7 @@ const acoesPosGrava = document.getElementById("acoesPosGrava");
 const playerAudio = document.getElementById("playerAudio");
 const controlPrincipal = document.getElementById("controlPrincipal");
 const hintText = document.getElementById("hintText");
+const btnNovoPaciente = document.getElementById("btnNovoPaciente");
 
 const statusText = document.getElementById("statusText");
 const statusDot = document.getElementById("statusDot");
@@ -293,6 +294,12 @@ btnGravar.onclick = () => {
     else pararGravacao();
 };
 
+if (btnNovoPaciente) {
+    btnNovoPaciente.onclick = () => {
+        window.location.href = "recepcao.html";
+    };
+}
+
 btnPausar.onclick = () => togglePause();
 
 btnRecomecar.onclick = () => {
@@ -421,7 +428,15 @@ if (btnAprovar) {
                 const btnPDF = document.getElementById('btnDownloadPDF');
                 if (btnPDF && pdfSignedUrl) {
                     btnPDF.href = pdfSignedUrl;
-                    btnPDF.onclick = (e) => { window.open(pdfSignedUrl, '_blank'); return false; };
+                    btnPDF.target = "_blank";
+                    // Removemos o onclick com e.preventDefault() ou comportamento que bloqueie a abertura
+                    btnPDF.onclick = (e) => {
+                        // Apenas garante que o link abra em nova aba se o navegador bloquear o target
+                        if (!btnPDF.href || btnPDF.href.includes('#')) {
+                            e.preventDefault();
+                            showToast("PDF ainda sendo gerado, tente em instantes.", "info");
+                        }
+                    };
                 }
 
                 // Atualizar badge
