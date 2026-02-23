@@ -8,6 +8,9 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <!-- Supabase SDK e Auth Guard -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="auth-guard.js"></script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -39,50 +42,13 @@
         <div class="bg-white py-8 px-4 shadow-xl shadow-slate-200 sm:rounded-2xl sm:px-10 border border-slate-100">
             <div class="space-y-6">
 
-                <!-- Opção Secretaria -->
-                <div onclick="showLogin('secretaria')"
-                    class="group relative flex items-center p-4 border-2 border-slate-100 rounded-xl hover:border-indigo-500 hover:bg-indigo-50 transition-all cursor-pointer"
-                    id="btn-secretaria">
-                    <div
-                        class="flex-shrink-0 h-12 w-12 flex items-center justify-center rounded-lg bg-indigo-100 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
-                        <i class="ph-bold ph-user-list text-2xl"></i>
-                    </div>
-                    <div class="ml-4">
-                        <h3 class="text-lg font-bold text-slate-900 group-hover:text-indigo-700">Recepção / Secretária
-                        </h3>
-                        <p class="text-sm text-slate-500 group-hover:text-indigo-600">Cadastrar pacientes e gerenciar
-                            fila</p>
-                    </div>
-                    <i class="ph-bold ph-caret-right ml-auto text-slate-300 group-hover:text-indigo-500 text-xl"></i>
-                </div>
-
-                <!-- Opção Medico -->
-                <div onclick="showLogin('medico')"
-                    class="group relative flex items-center p-4 border-2 border-slate-100 rounded-xl hover:border-emerald-500 hover:bg-emerald-50 transition-all cursor-pointer"
-                    id="btn-medico">
-                    <div
-                        class="flex-shrink-0 h-12 w-12 flex items-center justify-center rounded-lg bg-emerald-100 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
-                        <i class="ph-bold ph-stethoscope text-2xl"></i>
-                    </div>
-                    <div class="ml-4">
-                        <h3 class="text-lg font-bold text-slate-900 group-hover:text-emerald-700">Área Médica</h3>
-                        <p class="text-sm text-slate-500 group-hover:text-emerald-600">Atendimento e Prontuário IA</p>
-                    </div>
-                    <i class="ph-bold ph-caret-right ml-auto text-slate-300 group-hover:text-emerald-500 text-xl"></i>
-                </div>
-
-                <!-- Formulario de Login (Hidden by default) -->
-                <div id="login-form" class="hidden animate-fade-in">
+                <!-- Formulario de Login Unico -->
+                <div id="login-form" class="animate-fade-in">
                     <div class="flex items-center mb-6">
-                        <button onclick="hideLogin()"
-                            class="p-2 mr-3 rounded-full hover:bg-slate-100 text-slate-500 transition-colors">
-                            <i class="ph-bold ph-arrow-left text-xl"></i>
-                        </button>
-                        <h3 class="text-lg font-bold text-slate-900" id="login-title">Acesso</h3>
+                        <h3 class="text-lg font-bold text-slate-900" id="login-title">Acesso à Clínica</h3>
                     </div>
 
                     <form onsubmit="handleLogin(event)" class="space-y-4">
-                        <input type="hidden" id="login-type" value="">
 
                         <div>
                             <label for="username" class="block text-sm font-medium text-slate-700 mb-1"
@@ -119,80 +85,47 @@
     </div>
 
     <script>
-        const btnSecretaria = document.getElementById('btn-secretaria');
-        const btnMedico = document.getElementById('btn-medico');
-        const loginForm = document.getElementById('login-form');
-        const loginTitle = document.getElementById('login-title');
-        const labelUsername = document.getElementById('label-username');
-        const inputType = document.getElementById('login-type');
         const errorMsg = document.getElementById('error-msg');
 
-        function showLogin(type) {
-            btnSecretaria.classList.add('hidden');
-            btnMedico.classList.add('hidden');
-            loginForm.classList.remove('hidden');
-            errorMsg.classList.add('hidden');
-
-            inputType.value = type;
-
-            if (type === 'secretaria') {
-                loginTitle.innerText = 'Acesso Recepção / Secretária';
-                labelUsername.innerText = 'Usuário';
-                document.getElementById('username').placeholder = 'admin';
-            } else {
-                loginTitle.innerText = 'Acesso Área Médica';
-                labelUsername.innerText = 'CRM ou Usuário';
-                document.getElementById('username').placeholder = 'ex: 12345';
-            }
-        }
-
-        function hideLogin() {
-            loginForm.classList.add('hidden');
-            btnSecretaria.classList.remove('hidden');
-            btnMedico.classList.remove('hidden');
-        }
-
-        function handleLogin(e) {
+        async function handleLogin(e) {
             e.preventDefault();
             const btnSubmit = document.getElementById('btn-submit');
-            const type = inputType.value;
-            const user = document.getElementById('username').value.trim();
-            const pass = document.getElementById('password').value;
+            const email = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
 
             errorMsg.classList.add('hidden');
             btnSubmit.innerHTML = '<i class="ph ph-spinner animate-spin"></i> Entrando...';
             btnSubmit.disabled = true;
 
-            // Simulação de login MOCK para o MVP
-            setTimeout(() => {
-                let success = false;
+            try {
+                // Autenticação Real com Supabase
+                const { data, error } = await supabaseClient.auth.signInWithPassword({
+                    email: email,
+                    password: password,
+                });
 
-                if (type === 'secretaria' && user === 'manager' && pass === 'admin123') {
-                    success = true;
-                    // Salvar no localStorage
-                    localStorage.setItem('secretaria_ativa', 'true');
-                    // Redirecionamento simpes para recepção
-                    window.location.href = 'recepcao.html';
-                }
-                else if (type === 'medico' && pass === '291098') {
-                    // MOCK: Aceita qualquer coisa com senha 123, e simula o Dr. Silva
-                    success = true;
-                    // Salvar no localStorage
-                    localStorage.setItem('medico_ativo', JSON.stringify({
-                        id: 'b76a352b-a9be-4ddb-a9a3-8edd897d9201', // O ID real do seu banco atual
-                        nome: 'Dr. Luciano',
-                        crm: user // Pega o que foi digitado
-                    }));
+                if (error) throw error;
 
-                    window.location.href = 'medico-dashboard.html';
-                }
+                // Sucesso! O Supabase gerencia o token automaticamente no GoTrue
+                // Mas vamos manter compatibilidade com seus scripts antigos que usam esses campos
+                localStorage.setItem('secretaria_ativa', 'true');
+                localStorage.setItem('medico_ativo', JSON.stringify({
+                    id: data.user.id,
+                    nome: 'Dr. Luciano', // No futuro podemos pegar data.user.user_metadata.full_name
+                    crm: 'admin'
+                }));
 
-                if (!success) {
-                    errorMsg.classList.remove('hidden');
-                    btnSubmit.innerHTML = 'Entrar';
-                    btnSubmit.disabled = false;
-                }
-            }, 800); // Simulando delay de rede
+                window.location.href = 'recepcao.html';
+
+            } catch (error) {
+                console.error("Erro no login:", error.message);
+                errorMsg.innerText = error.message === 'Invalid login credentials'
+                    ? 'E-mail ou senha incorretos.'
+                    : 'Erro ao conectar. Verifique os dados.';
+                errorMsg.classList.remove('hidden');
+                btnSubmit.innerHTML = 'Entrar';
+                btnSubmit.disabled = false;
+            }
         }
 
         // Se já tiver logado como médico e tentar ir pro login, auto-redirect (opcional)

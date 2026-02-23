@@ -415,13 +415,13 @@ if (btnAprovar) {
                 document.getElementById('resultadoProntuario').classList.add('hidden');
                 document.getElementById('conclusaoAtendimento').classList.remove('hidden');
 
-                // Sempre reconstruir link, pois se deu timeout ou erro, o ID é garantido
-                const pdfLink = `https://bkkdexuzrjouafrwzdsw.supabase.co/storage/v1/object/public/prontuarios_pdf/${payload.consulta_id}.pdf`;
+                // Agora geramos uma URL assinada em vez de link fixo
+                const pdfSignedUrl = await getSignedUrl('prontuarios_pdf', payload.consulta_id + '.pdf');
 
                 const btnPDF = document.getElementById('btnDownloadPDF');
-                if (btnPDF) {
-                    btnPDF.href = pdfLink;
-                    btnPDF.onclick = (e) => { window.open(pdfLink, '_blank'); return false; };
+                if (btnPDF && pdfSignedUrl) {
+                    btnPDF.href = pdfSignedUrl;
+                    btnPDF.onclick = (e) => { window.open(pdfSignedUrl, '_blank'); return false; };
                 }
 
                 // Atualizar badge

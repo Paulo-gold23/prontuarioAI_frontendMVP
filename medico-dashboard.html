@@ -9,6 +9,9 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <!-- Supabase SDK e Auth Guard -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="auth-guard.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -34,6 +37,10 @@
                     <span class="font-bold text-xl text-slate-800">Consultório Digital</span>
                 </div>
                 <div class="flex items-center gap-4">
+                    <a href="recepcao.html"
+                        class="text-sm font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-2">
+                        <i class="ph-bold ph-user-list"></i> Recepção
+                    </a>
                     <span class="text-sm font-medium text-slate-500" id="navbar-doctor-name">Carregando...</span>
                     <!-- Removido o login.html do href para usarmos func signOut -->
                     <button onclick="logoutMedico()"
@@ -53,11 +60,13 @@
         } else {
             // Atualiza o cabecalho
             document.addEventListener('DOMContentLoaded', () => {
-                document.getElementById('navbar-doctor-name').innerText = medicoAtivo.nome + (medicoAtivo.crm ? ` (CRM: ${medicoAtivo.crm})` : '');
+                document.getElementById('navbar-doctor-name').innerText = medicoAtivo.nome;
             });
         }
 
-        function logoutMedico() {
+        async function logoutMedico() {
+            await supabaseClient.auth.signOut();
+            localStorage.removeItem('secretaria_ativa');
             localStorage.removeItem('medico_ativo');
             window.location.href = 'login.html';
         }
@@ -193,10 +202,23 @@
                                 historicoContainer.innerHTML = `<div class="p-8 text-center text-slate-400 bg-slate-50/50 rounded-xl border border-dashed border-slate-200 col-span-full"><p class="text-sm">Nenhum atendimento finalizado hoje.</p></div>`;
                             } else {
                                 historicoContainer.innerHTML = '';
-                                histData.forEach(c => {
+
+                                // Usamos um loop for...of para poder usar await dentro
+                                for (const c of histData) {
                                     const dataC = new Date(c.data_hora);
                                     const dataFmt = dataC.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
                                     const horaFmt = dataC.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+                                    // Gerar URLs assinadas em vez de usar as públicas
+                                    const pdfSignedUrl = await getSignedUrl('prontuarios_pdf', c.consulta_id + '.pdf');
+
+                                    let audioTag = '';
+                                    if (c.audio_url) {
+                                        const audioSignedUrl = await getSignedUrl('audios_consultas', c.audio_url);
+                                        if (audioSignedUrl) {
+                                            audioTag = `<a href="${audioSignedUrl}" target="_blank" class="p-2 bg-slate-100 text-slate-500 rounded-lg hover:bg-indigo-50 hover:text-indigo-600 transition-colors" title="Ouvir Áudio"><i class="ph-bold ph-speaker-high"></i></a>`;
+                                        }
+                                    }
 
                                     const histCard = document.createElement('div');
                                     histCard.className = 'bg-white p-5 rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all animate-fade-in-up group';
@@ -209,26 +231,12 @@
                                         </div>
                                         <h4 class="font-bold text-slate-800 text-sm mb-4 line-clamp-1">${c.paciente_nome}</h4>
                                         <div class="flex gap-2">
-                                            <a href="${c.pdf_url}" target="_blank" class="flex-1 text-center py-2 bg-emerald-50 text-emerald-700 text-xs font-black rounded-lg hover:bg-emerald-100 transition-colors"> VER PDF </a>
-                                            ${(() => {
-                                            if (!c.audio_url) return '';
-                                            // Handle potential full URL or relative path
-                                            const baseUrl = "https://bkkdexuzrjouafrwzdsw.supabase.co/storage/v1/object/public/";
-                                            let finalAudioUrl = c.audio_url;
-
-                                            if (!finalAudioUrl.startsWith('http')) {
-                                                if (!finalAudioUrl.startsWith('audios_consultas/')) {
-                                                    finalAudioUrl = 'audios_consultas/' + finalAudioUrl;
-                                                }
-                                                finalAudioUrl = baseUrl + finalAudioUrl;
-                                            }
-
-                                            return `<a href="${finalAudioUrl}" target="_blank" class="p-2 bg-slate-100 text-slate-500 rounded-lg hover:bg-indigo-50 hover:text-indigo-600 transition-colors" title="Ouvir Áudio"><i class="ph-bold ph-speaker-high"></i></a>`;
-                                        })()}
+                                            <a href="${pdfSignedUrl || '#'}" target="_blank" class="flex-1 text-center py-2 bg-emerald-50 text-emerald-700 text-xs font-black rounded-lg hover:bg-emerald-100 transition-colors"> VER PDF </a>
+                                            ${audioTag}
                                         </div>
                                     `;
                                     historicoContainer.appendChild(histCard);
-                                });
+                                }
                             }
                         }
                     }

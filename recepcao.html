@@ -9,6 +9,9 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <!-- Supabase SDK e Auth Guard -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="auth-guard.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -91,7 +94,11 @@
                     <span class="font-bold text-xl text-slate-800">Recepção</span>
                 </div>
                 <div class="flex items-center gap-4">
-                    <span class="text-sm font-medium text-slate-500">Olá, Secretária</span>
+                    <a href="medico-dashboard.html"
+                        class="text-sm font-bold text-emerald-600 hover:text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-2">
+                        <i class="ph-bold ph-stethoscope"></i> Área Médica
+                    </a>
+                    <span class="text-sm font-medium text-slate-500">Olá, Equipe</span>
                     <button onclick="logoutSecretaria()"
                         class="text-sm text-rose-500 hover:text-rose-700 font-medium">Sair</button>
                 </div>
@@ -106,8 +113,10 @@
             window.location.href = 'login.html';
         }
 
-        function logoutSecretaria() {
+        async function logoutSecretaria() {
+            await supabaseClient.auth.signOut();
             localStorage.removeItem('secretaria_ativa');
+            localStorage.removeItem('medico_ativo');
             window.location.href = 'login.html';
         }
     </script>
