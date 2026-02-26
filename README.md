@@ -1,3 +1,22 @@
+<div align="center">
+  <img src="https://ui-avatars.com/api/?name=F+IO&background=4f46e5&color=fff&size=100&rounded=true" alt="formular.IO Logo">
+  <h1>formular.IO — Prontuário Médico com IA</h1>
+  <p><strong>A evolução do atendimento médico baseada em voz e Inteligência Artificial.</strong></p>
+</div>
+
+<br>
+
+<div align="center">
+  <img src="https://img.shields.io/badge/Status-MVP_Validável_v1.0-emerald?style=for-the-badge" alt="Status" />
+  <img src="https://img.shields.io/badge/Frontend-HTML5_|_CSS3_|_JS-blue?style=for-the-badge&logo=html5" alt="Frontend" />
+  <img src="https://img.shields.io/badge/Styling-Tailwind_CSS-06b6d4?style=for-the-badge&logo=tailwindcss" alt="Styling" />
+  <img src="https://img.shields.io/badge/Backend-n8n_|_Workflows-FF6C37?style=for-the-badge&logo=n8n" alt="Backend" />
+  <img src="https://img.shields.io/badge/Database-Supabase-3ECF8E?style=for-the-badge&logo=supabase" alt="Database" />
+  <img src="https://img.shields.io/badge/AI-Groq_|_GPT--4o_Mini-black?style=for-the-badge&logo=openai" alt="AI Stack" />
+</div>
+
+<br>
+
 ## 🩺 Sobre o Projeto
 
 O **formular.IO** (nome-código *Prontuário AI*) nasceu da dor de mercado dos profissionais de saúde que gastam em média 30 a 40% do seu tempo de consulta olhando para a tela do computador, digitando observações.
