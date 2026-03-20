@@ -242,12 +242,19 @@
       let atual = JSON.parse(localStorage.getItem("medico_ativo") || "{}");
       if (atual && atual.id) return atual;
 
-      const { data: { session } } = await supabaseClient.auth.getSession();
+      // Proteção: verificar se supabaseClient existe antes de usar
+      if (!window.supabaseClient || !window.supabaseClient.auth) {
+        console.warn('[garantirMedicoId] Supabase ainda não carregou. Usando dados do localStorage.');
+        if (atual && atual.nome) return atual;
+        throw new Error("Supabase indisponível e localStorage vazio. Faça login novamente.");
+      }
+
+      const { data: { session } } = await window.supabaseClient.auth.getSession();
       if (!session || !session.user || !session.user.id) {
         throw new Error("Sessao invalida");
       }
 
-      const medicoDb = await window.fetchMedicoData(session.user.id);
+      const medicoDb = typeof window.fetchMedicoData === 'function' ? await window.fetchMedicoData(session.user.id) : null;
       if (!medicoDb || !medicoDb.id) {
         throw new Error("medico_id nao encontrado");
       }
@@ -267,7 +274,9 @@
     }
 
     async function logoutMedico() {
-      await supabaseClient.auth.signOut();
+      if (window.supabaseClient && window.supabaseClient.auth) {
+        await window.supabaseClient.auth.signOut();
+      }
       localStorage.removeItem("medico_ativo");
       window.location.href = "login.html";
     }
@@ -441,7 +450,7 @@
         }
         const urlFila = `${WEBHOOK_LISTAR}?medico_id=${encodeURIComponent(medicoSeguro.id)}&t=${Date.now()}`;
         console.log('[DEBUG] Carregando pacientes para medico_id:', medicoSeguro.id);
-        const authHeaders = await window.getAuthHeaders();
+        const authHeaders = typeof window.getAuthHeaders === 'function' ? await window.getAuthHeaders() : {};
         const res = await fetch(urlFila, { headers: { ...authHeaders } });
         if (!res.ok) throw new Error('API Offline');
 
@@ -480,7 +489,7 @@
       try {
         const medicoSeguro = await garantirMedicoId();
         const url = `${WEBHOOK_HISTORICO}?medico_id=${encodeURIComponent(medicoSeguro.id)}&t=${Date.now()}`;
-        const authHeaders = await window.getAuthHeaders();
+        const authHeaders = typeof window.getAuthHeaders === 'function' ? await window.getAuthHeaders() : {};
         const res = await fetch(url, { headers: { ...authHeaders } });
         if (!res.ok) return;
 
@@ -528,7 +537,7 @@
 
       try {
         const url = `${WEBHOOK_HISTORICO}?paciente_id=${id}&t=${Date.now()}`;
-        const authHeaders = await window.getAuthHeaders();
+        const authHeaders = typeof window.getAuthHeaders === 'function' ? await window.getAuthHeaders() : {};
         const res = await fetch(url, { headers: { ...authHeaders } });
         const list = await res.json();
         const consultas = list.all_consultas || (list.value && Array.isArray(list.value) ? list.value : (Array.isArray(list) ? list : []));
