@@ -1,4 +1,6 @@
 
+console.log('[app.js v20260320] VERSÃO COM MODAL DE ASSINATURA carregada.');
+
 // ================= CONFIGURAÇÕES E SELETORES =================
 
 const btnGravar = document.getElementById("btnGravar");
@@ -28,9 +30,36 @@ let isRecording = false;
 let isPaused = false;
 
 let pacienteAtual = null;
-const medicoAtivo = JSON.parse(localStorage.getItem('medico_ativo')) || { id: 'b76a352b-a9be-4ddb-a9a3-8edd897d9201' };
-const MEDICO_ID = medicoAtivo.id;
+let medicoAtivo = JSON.parse(localStorage.getItem('medico_ativo')) || {};
 const WEBHOOK_BASE_URL = "https://n8n.srv1181762.hstgr.cloud/webhook";
+
+async function garantirMedicoId() {
+    if (medicoAtivo && medicoAtivo.id) return medicoAtivo.id;
+
+    if (!window.supabaseClient || !window.fetchMedicoData) {
+        throw new Error("Sessao medica indisponivel");
+    }
+
+    const { data: { session } } = await window.supabaseClient.auth.getSession();
+    if (!session || !session.user || !session.user.id) {
+        throw new Error("Sessao invalida");
+    }
+
+    const medicoDb = await window.fetchMedicoData(session.user.id);
+    if (!medicoDb || !medicoDb.id) {
+        throw new Error("medico_id nao encontrado");
+    }
+
+    medicoAtivo = {
+        ...medicoAtivo,
+        id: medicoDb.id,
+        auth_id: session.user.id,
+        nome: medicoAtivo.nome || medicoDb.nome || "Dr(a). Medico",
+        crm: medicoAtivo.crm || medicoDb.crm || ""
+    };
+    localStorage.setItem("medico_ativo", JSON.stringify(medicoAtivo));
+    return medicoAtivo.id;
+}
 
 // ================= INICIALIZAÇÃO =================
 
@@ -38,12 +67,29 @@ document.addEventListener('DOMContentLoaded', () => {
     const urlParams = new URLSearchParams(window.location.search);
     const pNome = urlParams.get('paciente');
     const pId = urlParams.get('id');
+    const pConvenio = urlParams.get('convenio') || 'Particular';
+
+    const mNameEl = document.getElementById('medicoNome');
+    const mAvatarEl = document.getElementById('medicoAvatar');
+    garantirMedicoId().then(() => {
+        if (mNameEl && medicoAtivo && medicoAtivo.nome) {
+            mNameEl.textContent = `Dr(a). ${medicoAtivo.nome}`;
+            if (mAvatarEl) {
+                mAvatarEl.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(medicoAtivo.nome)}&background=6366f1&color=fff`;
+            }
+        }
+    }).catch(err => console.error(err));
 
     if (pNome && pId) {
-        pacienteAtual = { id: pId, nome: pNome };
+        pacienteAtual = { id: pId, nome: pNome, convenio: pConvenio };
 
         const nomeEl = document.getElementById('pacienteNome');
         if (nomeEl) nomeEl.textContent = pNome;
+
+        const convEl = document.getElementById('pacienteConvenio');
+        if (convEl) convEl.textContent = pConvenio;
+
+        document.title = `Atendimento: ${pNome} | Prontuar.io`;
 
         const statusBadge = document.getElementById('pacienteStatus');
         if (statusBadge) {
@@ -103,6 +149,7 @@ function setRecordingStatus(state) {
         case "ready":
             statusText.textContent = "Pronto para iniciar atendimento";
             statusDot.className = "w-2 h-2 rounded-full bg-slate-400";
+            statusDot.innerHTML = '';
             hintText.textContent = "Clique para começar";
             controlPrincipal.style.display = "flex";
             acoesPosGrava.classList.add("hidden");
@@ -112,6 +159,7 @@ function setRecordingStatus(state) {
         case "recording":
             statusText.textContent = "Gravando consulta...";
             statusDot.className = "w-2 h-2 rounded-full bg-rose-500 animate-pulse";
+            statusDot.innerHTML = '';
             hintText.textContent = "Clique para parar";
             btnPausar.classList.remove("hidden");
             if (spacerPausar) spacerPausar.classList.remove("hidden");
@@ -119,18 +167,21 @@ function setRecordingStatus(state) {
         case "paused":
             statusText.textContent = "Gravação pausada";
             statusDot.className = "w-2 h-2 rounded-full bg-amber-500";
+            statusDot.innerHTML = '';
             hintText.textContent = "Clique para retomar";
             break;
         case "finished":
             statusText.textContent = "Áudio capturado";
             statusDot.className = "w-2 h-2 rounded-full bg-emerald-500";
+            statusDot.innerHTML = '';
             hintText.style.display = "none";
             controlPrincipal.style.display = "none";
             acoesPosGrava.classList.remove("hidden");
             break;
         case "processing":
             statusText.textContent = "IA analisando áudio...";
-            statusDot.className = "w-2 h-2 rounded-full bg-indigo-500 animate-bounce";
+            statusDot.className = "loader-7";
+            statusDot.innerHTML = '<div class="square"></div>';
             acoesPosGrava.classList.add("opacity-50", "pointer-events-none");
             break;
     }
@@ -323,11 +374,16 @@ async function processarProntuario() {
     const formData = new FormData();
     formData.append("audio", audioBlobFinal, "consulta.webm");
     formData.append("paciente_id", pacienteAtual.id);
-    formData.append("medico_id", MEDICO_ID);
+    const medicoId = await garantirMedicoId();
+    formData.append("medico_id", medicoId);
 
     try {
+        const authHeaders = await window.getAuthHeaders();
         const response = await fetch(WEBHOOK_BASE_URL + "/novaConsulta", {
             method: "POST",
+            headers: {
+                ...authHeaders
+            },
             body: formData
         });
 
@@ -362,13 +418,87 @@ async function processarProntuario() {
     }
 }
 
-// ================= APROVAÇÃO FINAL =================
+// ================= APROVAÇÃO FINAL (COM MODAL DE ASSINATURA LEGAL) =================
 
 const btnAprovar = document.getElementById('btnAprovar');
 const btnDescartar = document.getElementById('btnDescartar');
 
+// Elementos do Modal de Assinatura Legal
+const modalAssinatura = document.getElementById('modalAssinaturaLegal');
+const checkboxAcordo = document.getElementById('checkboxAcordo');
+const btnConfirmarAssinatura = document.getElementById('btnConfirmarAssinatura');
+const btnCancelarAssinatura = document.getElementById('btnCancelarAssinatura');
+const btnFecharModalAssinatura = document.getElementById('btnFecharModalAssinatura');
+const labelAcordoAssinatura = document.getElementById('labelAcordoAssinatura');
+const timestampAssinatura = document.getElementById('timestampAssinatura');
+
+// Toggle do checkbox -> habilita/desabilita botão de assinar
+if (checkboxAcordo) {
+    checkboxAcordo.addEventListener('change', () => {
+        const isChecked = checkboxAcordo.checked;
+        if (btnConfirmarAssinatura) btnConfirmarAssinatura.disabled = !isChecked;
+        // Visual feedback no label
+        if (labelAcordoAssinatura) {
+            if (isChecked) {
+                labelAcordoAssinatura.classList.remove('border-slate-200');
+                labelAcordoAssinatura.classList.add('border-emerald-400', 'bg-emerald-50/50');
+            } else {
+                labelAcordoAssinatura.classList.add('border-slate-200');
+                labelAcordoAssinatura.classList.remove('border-emerald-400', 'bg-emerald-50/50');
+            }
+        }
+    });
+}
+
+function abrirModalAssinatura() {
+    // Preencher nome do médico dinamicamente
+    const nomeEl = document.getElementById('nomeAssinante');
+    if (nomeEl && medicoAtivo && medicoAtivo.nome) {
+        nomeEl.textContent = medicoAtivo.nome;
+    }
+    // Resetar checkbox a cada abertura
+    if (checkboxAcordo) {
+        checkboxAcordo.checked = false;
+        checkboxAcordo.dispatchEvent(new Event('change'));
+    }
+    // Exibir timestamp atual
+    if (timestampAssinatura) {
+        const agora = new Date();
+        const fmt = agora.toLocaleDateString('pt-BR', {
+            day: '2-digit', month: '2-digit', year: 'numeric',
+            hour: '2-digit', minute: '2-digit', second: '2-digit'
+        });
+        timestampAssinatura.textContent = `Data/Hora da assinatura: ${fmt}`;
+    }
+    // Mostrar modal
+    if (modalAssinatura) modalAssinatura.style.display = 'flex';
+}
+
+function fecharModalAssinatura() {
+    if (modalAssinatura) modalAssinatura.style.display = 'none';
+}
+
+// Fechar modal com botões
+if (btnCancelarAssinatura) btnCancelarAssinatura.onclick = fecharModalAssinatura;
+if (btnFecharModalAssinatura) btnFecharModalAssinatura.onclick = fecharModalAssinatura;
+
+// Ao clicar em "Finalizar e Assinar Prontuário" -> abre o modal de confirmação legal
 if (btnAprovar) {
-    btnAprovar.onclick = async () => {
+    console.log('[app.js] btnAprovar encontrado, onclick configurado para abrir modal.');
+    btnAprovar.onclick = () => {
+        console.log('[app.js] btnAprovar clicado! consultaIdGlobal =', consultaIdGlobal);
+        if (!consultaIdGlobal) {
+            // abrindo modal mesmo assim para teste.
+        }
+        abrirModalAssinatura();
+    };
+}
+
+// Ao confirmar a assinatura no modal -> executa a aprovação real
+if (btnConfirmarAssinatura) {
+    btnConfirmarAssinatura.onclick = async () => {
+        fecharModalAssinatura();
+
         if (!consultaIdGlobal) return;
 
         btnAprovar.disabled = true;
@@ -385,15 +515,18 @@ if (btnAprovar) {
         };
 
         try {
-            // Promessa com timeout de segurança (30s)
+            // Promessa com timeout de segurança (25s)
+            const authHeaders = await window.getAuthHeaders();
             const fetchPromise = fetch(WEBHOOK_BASE_URL + "/aprovarConsulta", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: { 
+                    "Content-Type": "application/json",
+                    ...authHeaders
+                },
                 body: JSON.stringify(payload)
             });
 
-            // Se o servidor demorar > 30s, assumimos sucesso otimista no backend e liberamos o PDF
-            // Isso evita erro "NetworkError" no frontend enquanto n8n ainda trabalha
+            // Se o servidor demorar > 25s, assumimos sucesso otimista e liberamos o PDF
             const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('TIMEOUT')), 25000));
 
             let res;
@@ -401,8 +534,6 @@ if (btnAprovar) {
                 res = await Promise.race([fetchPromise, timeoutPromise]);
             } catch (e) {
                 if (e.message === 'TIMEOUT') {
-                    console.warn("Backend lento, forçando sucesso UI");
-                    // Simular resposta OK
                     res = { ok: true, json: () => ({ success: true }) };
                 } else {
                     throw e;
@@ -410,28 +541,24 @@ if (btnAprovar) {
             }
 
             if (res.ok) {
-                // Tentar parsear
                 let result = {};
                 try {
                     result = await res.json();
                 } catch (e) {
-                    console.warn("JSON inválido ou vazio, assumindo sucesso");
                     result = { success: true };
                 }
 
                 document.getElementById('resultadoProntuario').classList.add('hidden');
                 document.getElementById('conclusaoAtendimento').classList.remove('hidden');
 
-                // Agora geramos uma URL assinada em vez de link fixo
+                // Gerar URL assinada para o PDF
                 const pdfSignedUrl = await getSignedUrl('prontuarios_pdf', payload.consulta_id + '.pdf');
 
                 const btnPDF = document.getElementById('btnDownloadPDF');
                 if (btnPDF && pdfSignedUrl) {
                     btnPDF.href = pdfSignedUrl;
                     btnPDF.target = "_blank";
-                    // Removemos o onclick com e.preventDefault() ou comportamento que bloqueie a abertura
                     btnPDF.onclick = (e) => {
-                        // Apenas garante que o link abra em nova aba se o navegador bloquear o target
                         if (!btnPDF.href || btnPDF.href.includes('#')) {
                             e.preventDefault();
                             showToast("PDF ainda sendo gerado, tente em instantes.", "info");
@@ -463,7 +590,20 @@ if (btnAprovar) {
                 // Força UI de sucesso
                 document.getElementById('resultadoProntuario').classList.add('hidden');
                 document.getElementById('conclusaoAtendimento').classList.remove('hidden');
-                btnDownloadPDF.href = `https://bkkdexuzrjouafrwzdsw.supabase.co/storage/v1/object/public/prontuarios_pdf/${payload.consulta_id}.pdf`;
+                const btnDownloadPDF = document.getElementById('btnDownloadPDF');
+                if (btnDownloadPDF) {
+                    const fallbackUrl = await getSignedUrl('prontuarios_pdf', payload.consulta_id + '.pdf');
+                    if (fallbackUrl) {
+                        btnDownloadPDF.href = fallbackUrl;
+                        btnDownloadPDF.target = "_blank";
+                        btnDownloadPDF.onclick = (e) => {
+                            if (!btnDownloadPDF.href || btnDownloadPDF.href.includes('#')) {
+                                e.preventDefault();
+                                showToast("PDF ainda sendo gerado, tente em instantes.", "info");
+                            }
+                        };
+                    }
+                }
             } else {
                 showToast("Erro ao aprovar: " + err.message, "error");
                 btnAprovar.disabled = false;

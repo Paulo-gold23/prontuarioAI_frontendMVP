@@ -4,13 +4,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Atendimento Médico - formular.IO</title>
+    <title>Atendimento Médico - prontuar.IO</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Phosphor Icons -->
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <!-- Supabase SDK e Auth Guard -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script src="auth-guard.js"></script>
     <script src="dark-mode.js"></script>
     <!-- Google Fonts: Inter & Outfit -->
@@ -20,7 +20,7 @@
 
     <style>
         :root {
-            --brand-primary: #4f46e5;
+            --brand-primary: #10b981; /* emerald-500 */
             --brand-secondary: #0ea5e9;
         }
 
@@ -93,7 +93,7 @@
         textarea:focus {
             outline: none;
             border-color: var(--brand-primary);
-            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+            box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1); /* emerald shadow */
         }
 
         #conclusaoAtendimento {
@@ -147,6 +147,34 @@
             justify-content: center;
             padding: 20px;
         }
+        /* Loading 7 - Adapted from CodePen Manoz/kyWvQw */
+        .loader-7 {
+            display: inline-flex;
+            align-items: center;
+            width: 32px;
+            height: 10px;
+            position: relative;
+        }
+
+        .loader-7 .square {
+            width: 8px;
+            height: 8px;
+            border-radius: 2px;
+            background: linear-gradient(135deg, #6366f1, #818cf8);
+            animation: loadingG 1.5s cubic-bezier(0.17, 0.37, 0.43, 0.67) infinite;
+        }
+
+        @keyframes loadingG {
+            0% {
+                transform: translate(0, 0) rotate(0deg);
+            }
+            50% {
+                transform: translate(22px, 0) rotate(360deg);
+            }
+            100% {
+                transform: translate(0, 0) rotate(0deg);
+            }
+        }
     </style>
 </head>
 
@@ -156,7 +184,7 @@
         <!-- Header / Navigation -->
         <header class="flex justify-between items-center mb-10 animate-fade-in-down">
             <a href="medico-dashboard.html"
-                class="flex items-center gap-2 text-indigo-600 font-bold hover:text-indigo-700 transition-colors group">
+                class="flex items-center gap-2 text-emerald-600 font-bold hover:text-emerald-700 transition-colors group">
                 <div
                     class="p-2 rounded-lg bg-white shadow-sm border border-slate-100 group-hover:shadow-md group-active:scale-95 transition-all">
                     <i class="ph-bold ph-arrow-left"></i>
@@ -174,21 +202,20 @@
                     <i class="ph-bold ph-moon text-xl"></i>
                 </button>
                 <div class="w-10 h-10 rounded-xl bg-slate-200 border-2 border-white shadow-sm overflow-hidden">
-                    <img src="https://ui-avatars.com/api/?name=Medico&background=6366f1&color=fff" alt="Médico">
+                    <img id="medicoAvatar" src="https://ui-avatars.com/api/?name=Medico&background=6366f1&color=fff" alt="Médico">
                 </div>
             </div>
         </header>
 
-        <!-- Main Card -->
         <div
-            class="bg-white rounded-[32px] shadow-2xl shadow-indigo-100/50 border border-slate-100 overflow-hidden animate-fade-in-up">
+            class="bg-white rounded-[32px] shadow-2xl shadow-emerald-100/50 border border-slate-100 overflow-hidden animate-fade-in-up">
 
             <!-- Patient Header Info -->
             <div class="p-8 sm:p-10 bg-gradient-to-br from-slate-50 to-white border-b border-slate-100">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
                     <div class="flex items-center gap-5">
                         <div
-                            class="w-16 h-16 rounded-2xl bg-indigo-600 text-white flex items-center justify-center text-2xl font-black shadow-lg shadow-indigo-100">
+                            class="w-16 h-16 rounded-2xl bg-emerald-600 text-white flex items-center justify-center text-2xl font-black shadow-lg shadow-emerald-100">
                             <i class="ph-fill ph-user"></i>
                         </div>
                         <div>
@@ -207,7 +234,7 @@
                     </div>
 
                     <button id="btnNovoPaciente"
-                        class="px-5 py-2.5 bg-white border border-indigo-100 text-indigo-600 text-sm font-bold rounded-xl hover:border-indigo-300 hover:shadow-sm transition-all flex items-center gap-2 active:scale-95">
+                        class="px-5 py-2.5 bg-white border border-emerald-100 text-emerald-600 text-sm font-bold rounded-xl hover:border-emerald-300 hover:shadow-sm transition-all flex items-center gap-2 active:scale-95">
                         <i class="ph-bold ph-plus-circle text-lg"></i>
                         Novo Paciente
                     </button>
@@ -245,16 +272,16 @@
                     <div id="controlPrincipal" class="flex items-center gap-6">
                         <!-- Botão Pausar (Hidden by default) -->
                         <button id="btnPausar"
-                            class="hidden w-16 h-16 flex items-center justify-center rounded-2xl bg-white border-2 border-slate-100 text-slate-400 hover:text-indigo-600 hover:border-indigo-100 transition-all active:scale-95 shadow-sm">
+                            class="hidden w-16 h-16 flex items-center justify-center rounded-2xl bg-white border-2 border-slate-100 text-slate-400 hover:text-emerald-600 hover:border-emerald-100 transition-all active:scale-95 shadow-sm">
                             <i id="iconPausar" class="ph-fill ph-pause text-3xl"></i>
                         </button>
 
                         <div class="relative group">
                             <div
-                                class="absolute -inset-4 bg-indigo-500/10 rounded-full blur-xl group-hover:bg-indigo-500/20 transition-all">
+                                class="absolute -inset-4 bg-emerald-500/10 rounded-full blur-xl group-hover:bg-emerald-500/20 transition-all">
                             </div>
                             <button id="btnGravar"
-                                class="relative w-28 h-28 flex items-center justify-center rounded-full bg-gradient-to-br from-indigo-600 to-indigo-700 text-white shadow-2xl shadow-indigo-200 hover:shadow-indigo-300 hover:scale-105 active:scale-95 disabled:opacity-30 disabled:grayscale transition-all duration-300 z-10">
+                                class="relative w-28 h-28 flex items-center justify-center rounded-full bg-gradient-to-br from-emerald-600 to-emerald-700 text-white shadow-2xl shadow-emerald-200 hover:shadow-emerald-300 hover:scale-105 active:scale-95 disabled:opacity-30 disabled:grayscale transition-all duration-300 z-10">
                                 <i id="iconGravar" class="ph-fill ph-microphone text-5xl"></i>
                             </button>
                         </div>
@@ -345,7 +372,7 @@
                             Descartar
                         </button>
                         <button id="btnAprovar"
-                            class="flex-1 sm:flex-none px-12 py-4 bg-indigo-600 text-white font-bold rounded-2xl shadow-xl shadow-indigo-100 hover:shadow-indigo-200 hover:-translate-y-0.5 transition-all">
+                            class="flex-1 sm:flex-none px-12 py-4 bg-emerald-600 text-white font-bold rounded-2xl shadow-xl shadow-emerald-100 hover:shadow-emerald-200 hover:-translate-y-0.5 transition-all">
                             Finalizar e Assinar Prontuário
                         </button>
                     </div>
@@ -376,7 +403,7 @@
         </div>
 
         <footer class="mt-16 text-center text-slate-400 text-sm font-medium">
-            <p>&copy; 2026 formular.IO &bull; O futuro do prontuário médico</p>
+            <p>&copy; 2026 prontuar.IO &bull; O futuro do prontuário médico</p>
         </footer>
     </div>
 
@@ -395,14 +422,74 @@
                 <button id="confirmCancel"
                     class="flex-1 py-3 bg-slate-100 text-slate-600 font-bold rounded-xl hover:bg-slate-200 transition-all">Cancelar</button>
                 <button id="confirmOk"
-                    class="flex-1 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all">Sim,
+                    class="flex-1 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 shadow-lg shadow-emerald-100 transition-all">Sim,
                     prosseguir</button>
             </div>
         </div>
     </div>
 
+    <!-- Modal de Confirmação e Assinatura Legal -->
+    <div id="modalAssinaturaLegal" class="custom-ui-overlay">
+        <div class="bg-white rounded-[28px] p-8 sm:p-10 max-w-lg w-full shadow-2xl animate-fade-in-up relative">
+            <!-- Close button -->
+            <button id="btnFecharModalAssinatura" class="absolute top-4 right-4 p-2 rounded-xl text-slate-300 hover:text-slate-600 hover:bg-slate-100 transition-all">
+                <i class="ph-bold ph-x text-lg"></i>
+            </button>
+
+            <!-- Icon -->
+            <div class="w-20 h-20 bg-gradient-to-br from-emerald-50 to-emerald-100 text-emerald-600 rounded-[1.25rem] flex items-center justify-center mb-6 mx-auto shadow-inner">
+                <i class="ph-fill ph-seal-check text-5xl"></i>
+            </div>
+
+            <!-- Title -->
+            <h3 class="text-2xl font-black text-slate-900 text-center mb-2 tracking-tight">Confirmar e Assinar Prontuário</h3>
+            <p class="text-sm text-slate-400 text-center mb-8 font-medium">Leia atentamente a declaração abaixo antes de prosseguir.</p>
+
+            <!-- Declaration Box -->
+            <div class="bg-slate-50 rounded-2xl border border-slate-100 p-5 sm:p-6 mb-6">
+                <div class="flex items-start gap-3 mb-3">
+                    <div class="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-slate-400 border border-slate-200 shrink-0 mt-0.5">
+                        <i class="ph-bold ph-scales text-base"></i>
+                    </div>
+                    <p class="text-xs font-black text-slate-500 uppercase tracking-widest">Declaração de Responsabilidade Médica</p>
+                </div>
+                <p class="text-sm text-slate-600 leading-relaxed">
+                    Declaro que <strong class="text-slate-800">li integralmente</strong> o conteúdo do prontuário gerado 
+                    por inteligência artificial, realizei as <strong class="text-slate-800">edições necessárias</strong> e confirmo que as informações 
+                    contidas neste documento estão <strong class="text-slate-800">corretas e de acordo</strong> com o atendimento realizado. 
+                    Assumo total <strong class="text-slate-800">responsabilidade clínica e legal</strong> pelo conteúdo final deste prontuário.
+                </p>
+            </div>
+
+            <!-- Checkbox Agreement -->
+            <label id="labelAcordoAssinatura" class="flex items-start gap-3 p-4 rounded-xl border-2 border-slate-200 hover:border-emerald-300 transition-all cursor-pointer mb-8 group select-none">
+                <input type="checkbox" id="checkboxAcordo" class="mt-0.5 w-5 h-5 rounded-md border-2 border-slate-300 text-emerald-600 focus:ring-emerald-500 accent-emerald-600 cursor-pointer shrink-0">
+                <span class="text-sm text-slate-600 font-medium leading-relaxed group-hover:text-slate-800 transition-colors">
+                    Eu, <strong id="nomeAssinante" class="text-slate-900">Dr(a). Médico</strong>, confirmo que li, revisei e estou de acordo 
+                    com todo o conteúdo deste prontuário.
+                </span>
+            </label>
+
+            <!-- Action Buttons -->
+            <div class="flex gap-3">
+                <button id="btnCancelarAssinatura"
+                    class="flex-1 py-3.5 bg-slate-100 text-slate-500 font-bold rounded-xl hover:bg-slate-200 transition-all text-sm">
+                    Cancelar
+                </button>
+                <button id="btnConfirmarAssinatura" disabled
+                    class="flex-1 py-3.5 bg-emerald-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-100 transition-all text-sm flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none hover:bg-emerald-700 hover:shadow-emerald-200">
+                    <i class="ph-fill ph-pen-nib text-lg"></i>
+                    Assinar Prontuário
+                </button>
+            </div>
+
+            <!-- Timestamp -->
+            <p id="timestampAssinatura" class="text-center text-[10px] text-slate-300 font-bold uppercase tracking-widest mt-5"></p>
+        </div>
+    </div>
+
     <!-- Scripts do App -->
-    <script src="app.js"></script>
+    <script src="app.js?v=20260320b"></script>
 </body>
 
 </html>
