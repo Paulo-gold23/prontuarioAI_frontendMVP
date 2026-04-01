@@ -205,6 +205,12 @@
         </div>
       </div>
     </div>
+    
+    <!-- Footer -->
+    <footer class="mt-16 pb-8 border-t border-slate-200 pt-8 text-center text-slate-400 text-sm font-medium space-y-2">
+      <p class="flex items-center justify-center gap-1.5"><i class="ph-fill ph-seal-check text-emerald-500"></i> Software Registrado INPI: BR512026001957-5</p>
+      <p>&copy; 2026 prontuar.IO &bull; O futuro do prontuário médico</p>
+    </footer>
   </main>
 
   <!-- Modal Histórico Paciente -->
@@ -509,17 +515,35 @@
           const dataFmt = dataC.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
           const pdfUrl = await getSignedUrl("prontuarios_pdf", item.consulta_id + ".pdf");
           
+          let cardAudioHtml = "";
+          try {
+            const audioName = item.audio_url ? item.audio_url.split('/').pop() : item.consulta_id + ".webm";
+            const audioUrl = await getSignedUrl("audios_consultas", audioName);
+            if (audioUrl) {
+              cardAudioHtml = `
+                <div class="mt-2 mb-4 w-full">
+                  <audio controls controlsList="nodownload" src="${audioUrl}" class="h-6 w-full opacity-60 hover:opacity-100 transition-all rounded-full bg-slate-50 border border-slate-100"></audio>
+                </div>
+              `;
+            }
+          } catch(e) { console.error("Erro ao carregar áudio:", e); }
+
           const card = document.createElement("div");
-          card.className = "bg-white p-5 rounded-3xl border border-slate-100 hover:border-emerald-200 hover:shadow-xl hover:shadow-emerald-500/5 transition-all duration-300 animate-in group";
+          card.className = "bg-white p-5 rounded-3xl border border-slate-100 hover:border-emerald-200 hover:shadow-xl hover:shadow-emerald-500/5 transition-all duration-300 animate-in group flex flex-col justify-between";
           card.innerHTML = `
-            <div class="flex justify-between items-start mb-4">
-              <div class="w-10 h-10 bg-slate-50 text-slate-400 rounded-xl flex items-center justify-center group-hover:bg-emerald-50 group-hover:text-emerald-500 transition-all">
-                <i class="ph ph-file-text text-xl"></i>
+            <div>
+              <div class="flex justify-between items-start mb-4">
+                <div class="w-10 h-10 bg-slate-50 text-slate-400 rounded-xl flex items-center justify-center group-hover:bg-emerald-50 group-hover:text-emerald-500 transition-all">
+                  <i class="ph ph-file-text text-xl"></i>
+                </div>
+                <span class="text-[10px] bg-slate-50 px-2 py-1 rounded-md text-slate-400 font-bold uppercase tracking-wider">${dataFmt}</span>
               </div>
-              <span class="text-[10px] bg-slate-50 px-2 py-1 rounded-md text-slate-400 font-bold uppercase tracking-wider">${dataFmt}</span>
+              <h5 class="font-extrabold text-slate-900 text-sm mb-4 line-clamp-1">${item.paciente_nome}</h5>
             </div>
-            <h5 class="font-extrabold text-slate-900 text-sm mb-4 line-clamp-1">${item.paciente_nome}</h5>
-            <a href="${pdfUrl || '#'}" target="_blank" class="w-full py-2 bg-slate-900 text-white text-[10px] font-black rounded-xl hover:bg-emerald-600 transition-all uppercase tracking-widest text-center inline-block">Ver Laudo</a>
+            <div class="mt-auto">
+              ${cardAudioHtml}
+              <a href="${pdfUrl || '#'}" target="_blank" class="w-full py-2 bg-slate-900 text-white text-[10px] font-black rounded-xl hover:bg-emerald-600 transition-all uppercase tracking-widest text-center inline-block">Ver Laudo</a>
+            </div>
           `;
           container.appendChild(card);
         }
@@ -552,19 +576,35 @@
           const data = new Date(c.data_hora).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
           const pdfUrl = await getSignedUrl("prontuarios_pdf", c.consulta_id + ".pdf");
           
+          let audioHtml = "";
+          try {
+            const audioName = c.audio_url ? c.audio_url.split('/').pop() : c.consulta_id + ".webm";
+            const audioUrl = await getSignedUrl("audios_consultas", audioName);
+            if (audioUrl) {
+              audioHtml = `
+                <div class="mt-3 w-full">
+                  <audio controls controlsList="nodownload" src="${audioUrl}" class="h-8 w-full opacity-70 hover:opacity-100 transition-all rounded-full bg-slate-100"></audio>
+                </div>
+              `;
+            }
+          } catch(e) { console.error("Erro ao carregar áudio:", e); }
+
           const div = document.createElement("div");
-          div.className = "flex items-center justify-between p-5 bg-slate-50 rounded-2xl hover:bg-white border border-transparent hover:border-emerald-100 hover:shadow-lg transition-all group";
+          div.className = "p-5 bg-slate-50 rounded-2xl hover:bg-white border border-transparent hover:border-emerald-100 hover:shadow-lg transition-all group";
           div.innerHTML = `
-            <div class="flex items-center gap-4">
-              <div class="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-emerald-500 shadow-sm">
-                <i class="ph-bold ph-calendar"></i>
+            <div class="flex items-center justify-between mb-2">
+              <div class="flex items-center gap-4">
+                <div class="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-emerald-500 shadow-sm">
+                  <i class="ph-bold ph-calendar"></i>
+                </div>
+                <div>
+                  <p class="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-0.5">${data}</p>
+                  <p class="text-xs text-slate-400 font-bold uppercase tracking-tight">Atendimento Finalizado</p>
+                </div>
               </div>
-              <div>
-                <p class="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-0.5">${data}</p>
-                <p class="text-xs text-slate-400 font-bold uppercase tracking-tight">Atendimento Finalizado</p>
-              </div>
+              <a href="${pdfUrl || '#'}" target="_blank" class="px-5 py-2.5 bg-slate-900 text-white text-[10px] font-black rounded-xl hover:bg-emerald-600 transition-all uppercase tracking-widest shadow-xl">PDF</a>
             </div>
-            <a href="${pdfUrl || '#'}" target="_blank" class="px-5 py-2.5 bg-slate-900 text-white text-[10px] font-black rounded-xl hover:bg-emerald-600 transition-all uppercase tracking-widest shadow-xl">PDF</a>
+            ${audioHtml}
           `;
           content.appendChild(div);
         }
